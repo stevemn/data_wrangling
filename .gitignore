@@ -1,0 +1,4 @@
+*.pyc
+da/data_wrangling/osm/data/*
+da/data_wrangling/mongo/data/*
+da/data_wrangling/analysis/data/*
