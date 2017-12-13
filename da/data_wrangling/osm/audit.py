@@ -111,13 +111,85 @@ def audit(osmfile):
                 print k
     return
 
+
+def get_element(osm_file, skip=('osm')):
+    """Yield element if it is the right type of tag
+
+    Reference:
+    http://stackoverflow.com/questions/3095434/inserting-newlines-in-xml-file-generated-via-xml-etree-elementtree-in-python
+    """
+    context = iter(ET.iterparse(osm_file, events=('start', 'end')))
+    _, root = next(context)
+    for event, elem in context:
+        if event == 'end' and elem.tag not in skip:
+            yield elem
+            root.clear()
+
+def traverse_elements(osmFile):
+    #check "text" values
+    #confirm attribute counts match node counts
+    #check child sums match node counts
+    #proportion with/without children (nodes with/without tags, etc)
+    #k attributes with ":"
+    #sample values for every kind of attribute
+    tag_count = Counter()
+    with_text = Counter()
+    attrib_count = defaultdict(Counter)
+    child_count = defaultdict(Counter)
+    attribute_sample = defaultdict(dict)
+    for elem in get_element(osmFile):
+        if elem.text is True:
+            with_text[elem.tag] += 1
+        tag_count[elem.tag] += 1
+        for k in elem.attrib:
+            attrib_count[elem.tag][k] += 1
+            attribute_sample[elem.tag][k] = elem.attrib[k]
+        for child in list(elem):
+            child_count[elem.tag][child.tag] += 1
+
+    # for a in attrib_count:
+    #     attrib_count[a] = dict(attrib_count[a])
+    # for c in child_count:
+    #     child_count[c] = dict(child_count[c])
+    # tag_count = dict(tag_count)
+    # attrib_count = dict(attrib_count)
+    # child_count = dict(child_count)
+
+    # Asserts every element has every attribute present
+    for tag in attrib_count:
+        for k,v in attrib_count[tag].items():
+            assert v == tag_count[tag]
+
+    # Asserts no elements contain text
+    assert dict(with_text) == {}
+
+    # Asserts that all child elements are children of a top-level element
+    # e.g., there are no orphaned elements
+    child_nodes = ('nd', 'tag', 'member')
+    child_shares = defaultdict(dict)
+    for c in child_nodes:
+        total = 0
+        for parent, children in child_count.items():
+            for child in children:
+                if c == child:
+                    total += children[child]
+                    # child_shares[c][parent] = float(children[child]) / tag_count[c]
+        assert total == tag_count[c]
+
+    # pp.pprint(tag_count)
+    # pp.pprint(attrib_count)
+    # pp.pprint(dict(child_shares))
+    pp.pprint(dict(with_text))
+    pp.pprint(dict(attribute_sample))
+
 if __name__ == "__main__":
-    out = audit('data/providence_et_al.xml')
+    traverse_elements('data/providence_et_al.xml')
+    # out = audit('data/providence_et_al.xml')
     # print tags.most_common(100)
     # for tag in out:
     #     print tag
     #     print out[tag]
-    pp.pprint(out)
+    # pp.pprint(out)
     # x = users.most_common(100)
     # print x
 	# for k,v in users.items():
