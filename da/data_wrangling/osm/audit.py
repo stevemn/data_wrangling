@@ -137,6 +137,7 @@ def traverse_elements(osmFile):
     attrib_count = defaultdict(Counter)
     child_count = defaultdict(Counter)
     attribute_sample = defaultdict(dict)
+    tag_k_v = dict()
     for elem in get_element(osmFile):
         if elem.text is True:
             with_text[elem.tag] += 1
@@ -146,6 +147,8 @@ def traverse_elements(osmFile):
             attribute_sample[elem.tag][k] = elem.attrib[k]
         for child in list(elem):
             child_count[elem.tag][child.tag] += 1
+        if elem.tag == 'tag':
+            tag_k_v[elem.attrib['k']] = elem.attrib['v'] 
 
     # for a in attrib_count:
     #     attrib_count[a] = dict(attrib_count[a])
@@ -181,6 +184,13 @@ def traverse_elements(osmFile):
     # pp.pprint(dict(child_shares))
     pp.pprint(dict(with_text))
     pp.pprint(dict(attribute_sample))
+    colons = [ c.split(':') for c in tag_k_v if ':' in c ]
+    k_vs = defaultdict(dict)
+    for c in colons:
+        k_vs[c[0]][c[1]] = tag_k_v[':'.join(c)]
+    k_vs = dict(k_vs)
+    del k_vs['name']
+    pp.pprint(k_vs)
 
 if __name__ == "__main__":
     traverse_elements('data/providence_et_al.xml')
